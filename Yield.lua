@@ -2,14 +2,15 @@
 	
 	Class Yield
 		METHODS
-			static Yield(f: function, hideErrors: bool false) --> yield: Yield
-			static :new(f: function, hideErrors: bool false) --> yield: Yield
+			static Yield(f: function, errorBehavior: ErrorBehavior [ERROR]) --> yield: Yield
+			static :new(f: function, errorBehavior: ErrorBehavior [ERROR]) --> yield: Yield
 				Creates a new Yield that will run `f` when resumed
+				errorBehavior is optional. If not provided, it defaults to ERROR.
 			static :running() --> Yield currentYield
 				Returns the Yield that is currently running, or nil if none.
-			static :yield(... [1]) --> ... [2]
+			static :yield(... [a]) --> ... [b]
 				Same as non-static `:yield`, but acts on whatever the currently-running Yield is.
-				Errors if there is no current Yield, or if this Yield is not running.
+				Errors if there is no current Yield.
 			:yield(... [a]) --> ... [b]
 				Passes ... [a] to whatever `:resume`d this Yield, then waits to be `:resume`d.
 				Returns whatever ... [b] in `:resume(... [b])` will be, once resumed.
@@ -30,13 +31,23 @@
 				Returns whether or not the Yield has finished. (`.state < Yield.FINISHED`)
 		PROPERTIES
 			state: YieldState
+				Current state of the Yield. Similar to the results of `coroutine.status`
+			errorBehavior: ErrorBehavior
+				What to do when there is an error.
 			error: Variant
+				Only set if the Yield is finished (state = ERROR) and there was an error.
 		CONSTANTS
 			STOPPED:  YieldState (0)
 			RUNNING:  YieldState (1)
 			PAUSED:   YieldState (2)
 			FINISHED: YieldState (3)
 			ERROR:    YieldState (4)
+			NONE:  ErrorBehavior (0)
+				If used, there are no warnings or errors in the console if an error happens.
+			WARN:  ErrorBehavior (1)
+				If used, there is a warning in the console if an error happens.
+			ERROR: ErrorBehavior (4)
+				If used, there is an error in the console if an error happens.
 --]]
 
 local function runYield(this)
@@ -49,14 +60,24 @@ local function assertMetatable(tbl, meta, err)
 	return assert(type(tbl) == "table" and getmetatable(tbl) == meta, err)
 end
 
+local function callbackInner(func1, func2, ...)
+	return func1(func2(...))
+end
+
 local YieldWrap, YieldWrapMeta
 YieldWrapMeta = {
 	__index = {
+		-- YieldState
 		STOPPED  = 0,
 		RUNNING  = 1,
 		PAUSED   = 2,
 		FINISHED = 3,
 		ERROR    = 4,
+		-- ErrorBehavior
+		NONE  = 0,
+		WARN  = 1,
+		ERROR = 4,
+		--
 		globalIndex = {},
 		globalStack = {},
 		pushStack = function(this, yieldWrap)
@@ -93,10 +114,11 @@ YieldWrapMeta = {
 			newYield:construct(...)
 			return newYield
 		end,
-		construct = function(this, func, hideErrors)
+		construct = function(this, func, errorBehavior)
 			assert(type(func) == "function" or type(func) == "table", "`f` should be a function or table")
 			this.func = func
-			this.hideErrors = not not hideErrors
+			this.errorBehavior = errorBehavior or this.ERROR
+			assert(type(this.errorBehavior) == "number", "errorBehavior should be an ErrorBehavior or nil.")
 			this.inEvent = Instance.new("BindableEvent")
 			this.outEvent = Instance.new("BindableEvent")
 			this.inArguments = {}
@@ -113,9 +135,6 @@ YieldWrapMeta = {
 				if success then
 					this.state = this.FINISHED
 				else
-					if not hideErrors then
-						warn("Error in Yield: "..tostring(err))
-					end
 					this.outArguments = {}
 					this.state = this.ERROR
 					this.error = err
@@ -171,6 +190,13 @@ YieldWrapMeta = {
 			if not outArgs then
 				this.outEvent.Event:wait()
 				outArgs = this.outArguments
+			end
+			if this.error and this.errorBehavior ~= this.NONE then
+				if this.errorBehavior == this.WARN then
+					warn("Error in Yield: "..tostring(this.error))
+				elseif this.errorBehavior == this.ERROR then
+					error("Error in Yield: "..tostring(this.error))
+				end
 			end
 			return unpack(outArgs)
 		end,
