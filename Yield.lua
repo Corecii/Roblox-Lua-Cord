@@ -2,8 +2,8 @@
 	
 	Class Yield
 		METHODS
-			static Yield(f: function) --> yield: Yield
-			static :new(f: function) --> yield: Yield
+			static Yield(f: function, hideErrors: bool false) --> yield: Yield
+			static :new(f: function, hideErrors: bool false) --> yield: Yield
 				Creates a new Yield that will run `f` when resumed
 			static :running() --> Yield currentYield
 				Returns the Yield that is currently running, or nil if none.
@@ -93,9 +93,10 @@ YieldWrapMeta = {
 			newYield:construct(...)
 			return newYield
 		end,
-		construct = function(this, func)
+		construct = function(this, func, hideErrors)
 			assert(type(func) == "function" or type(func) == "table", "`f` should be a function or table")
 			this.func = func
+			this.hideErrors = not not hideErrors
 			this.inEvent = Instance.new("BindableEvent")
 			this.outEvent = Instance.new("BindableEvent")
 			this.inArguments = {}
@@ -112,7 +113,9 @@ YieldWrapMeta = {
 				if success then
 					this.state = this.FINISHED
 				else
-					-- warn("Error in Yield: "..tostring(err))
+					if not hideErrors then
+						warn("Error in Yield: "..tostring(err))
+					end
 					this.outArguments = {}
 					this.state = this.ERROR
 					this.error = err
