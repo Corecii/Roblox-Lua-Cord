@@ -6,11 +6,16 @@
 			static :new(f: function, errorBehavior: ErrorBehavior [ERROR]) --> yield: Yield
 				Creates a new Cord that will run `f` when resumed
 				errorBehavior is optional. If not provided, it defaults to ERROR.
-			static :running() --> currentCord: Cord
+			static :running(findExtended: bool [false]) --> currentCord: Cord
 				Returns the Cord that is currently running, or nil if none.
+				if findExtended is true, this also looks for a Cord that is technically
+				 executing, but where any yields in the current context will split the context
+				 off into a new coroutine where the Cord is not active.
 			static :yield(... [a]) --> ... [b]
 				Same as non-static `:yield`, but acts on whatever the currently-running Cord is.
-				Errors if there is no current Cord.
+				Generally, you should be using this instead of cord-specific yields!
+				Using cord-specific yields is a pathway to errors and bugs that lock up your script!
+				Errors if there is no current Cord, or if the current context is not within the current Cord.
 			:yield(... [a]) --> ... [b]
 				Passes ... [a] to whatever `:resume`d this Cord, then waits to be `:resume`d.
 				Returns whatever ... [b] in `:resume(... [b])` will be, once resumed.
@@ -88,13 +93,13 @@ CordWrapMeta = {
 			this.globalStack[#this.globalStack] = nil
 			return yieldWrap
 		end,
-		running = function(this)
+		running = function(this, findExtended)
 			assertMetatable(this, CordWrapMeta, "Expected ':' not '.' calling member function running")
 			local current = this.globalIndex[coroutine.running()]
 			if current then
 				-- easy! current Cord is whichever the current coroutine is!
 				return current
-			else
+			elseif findExtended then
 				-- looks like it shifted to another coroutine, but hasn't waited at all yet
 				-- in that case, we need to find which coroutine is active, but not suspended or dead
 				-- we want to find the most recent one like this: it's possible for a Cord to
@@ -145,7 +150,7 @@ CordWrapMeta = {
 		yield = function(this, ...)
 			assertMetatable(this, CordWrapMeta, "Expected ':' not '.' calling member function yield")
 			if this == CordWrap then
-				return assert(this:running(), "No Cord is running."):yield(...)
+				return assert(this:running(true), "No Cord is running."):yield(...)
 			end
 			if this.state >= this.FINISHED then
 				error("Cannot yield when already finished")
@@ -154,7 +159,7 @@ CordWrapMeta = {
 			elseif this.state == this.PAUSED then
 				error("Cannot yield while paused")
 			end
-			if coroutine.status(this.coroutine) == "suspended" then
+			if coroutine.status(this.coroutine) ~= "running" then
 				error(":yield called from outside the Cord")
 			end
 			this.outArguments = {...}
