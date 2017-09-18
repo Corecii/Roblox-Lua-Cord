@@ -96,8 +96,7 @@ local getNums = function(start, count)
 end
 
 for num in getNums(10, 20) do
-	print(num)  -- wil print 1 through 20
+	print(num)  -- will print 10 through 20
 end
-
 
 ---
