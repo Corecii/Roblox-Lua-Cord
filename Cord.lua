@@ -2,8 +2,8 @@
 	
 	Class Cord
 		METHODS
-			static Cord(f: function, errorBehavior: ErrorBehavior [ERROR] | function) --> yield: Cord
-			static :new(f: function, errorBehavior: ErrorBehavior [ERROR] | function) --> yield: Yield
+			static Cord(f: function, errorBehavior: ErrorBehavior [ERROR] | function) --> cord: Cord
+			static :new(f: function, errorBehavior: ErrorBehavior [ERROR] | function) --> cord: Cord
 				Creates a new Cord that will run `f` when resumed
 				errorBehavior is optional. If not provided, it defaults to ERROR. Check :resume for docs.
 			static :running(findExtended: bool [false]) --> currentCord: Cord
