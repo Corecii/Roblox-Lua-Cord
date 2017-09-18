@@ -1,47 +1,47 @@
 --[[ API Reference
 	
-	Class Yield
+	Class Cord
 		METHODS
-			static Yield(f: function, errorBehavior: ErrorBehavior [ERROR]) --> yield: Yield
+			static Cord(f: function, errorBehavior: ErrorBehavior [ERROR]) --> yield: Cord
 			static :new(f: function, errorBehavior: ErrorBehavior [ERROR]) --> yield: Yield
-				Creates a new Yield that will run `f` when resumed
+				Creates a new Cord that will run `f` when resumed
 				errorBehavior is optional. If not provided, it defaults to ERROR.
-			static :running() --> Yield currentYield
-				Returns the Yield that is currently running, or nil if none.
+			static :running() --> currentCord: Cord
+				Returns the Cord that is currently running, or nil if none.
 			static :yield(... [a]) --> ... [b]
-				Same as non-static `:yield`, but acts on whatever the currently-running Yield is.
-				Errors if there is no current Yield.
+				Same as non-static `:yield`, but acts on whatever the currently-running Cord is.
+				Errors if there is no current Cord.
 			:yield(... [a]) --> ... [b]
-				Passes ... [a] to whatever `:resume`d this Yield, then waits to be `:resume`d.
+				Passes ... [a] to whatever `:resume`d this Cord, then waits to be `:resume`d.
 				Returns whatever ... [b] in `:resume(... [b])` will be, once resumed.
-				Errors if this Yield is not running.
-			Yield(... [b]) --> ... [a]
+				Errors if this Cord is not running.
+			Cord(... [b]) --> ... [a]
 			:resume(... [b]) --> ... [a]
-				Passes ... [b] into this Yield as the result of the earlier `:yield` call,
+				Passes ... [b] into this Cord as the result of the earlier `:yield` call,
 				 then waits for the `:yield`
 				Returns whatever the next `:yield(... [a])` will be, once yield is called.
-				 If the Yield returns and finished, this returns whatever yield returned
-				If this Yield errors, it will return `nil` and the `error` propert will be set.
-				Errors if this Yield is running or already finished.
+				 If the Cord returns and finished, this returns whatever yield returned
+				If this Cord errors, it will return `nil` and the `error` propert will be set.
+				Errors if this Cord is running or already finished.
 			:getResumeCaller() --> resumeCaller: function
 				Returns a function that calls `:resume` on this yield and returns the result
 			:getYieldCaller() --> yieldCaller: function
 				Returns a function that calls `:yield` on this yield and returns the result
 			:finished() --> isFinished: bool
-				Returns whether or not the Yield has finished. (`.state < Yield.FINISHED`)
+				Returns whether or not the Cord has finished. (`.state < Cord.FINISHED`)
 		PROPERTIES
-			state: YieldState
-				Current state of the Yield. Similar to the results of `coroutine.status`
+			state: CordState
+				Current state of the Cord. Similar to the results of `coroutine.status`
 			errorBehavior: ErrorBehavior
 				What to do when there is an error.
 			error: Variant
-				Only set if the Yield is finished (state = ERROR) and there was an error.
+				Only set if the Cord is finished (state = ERROR) and there was an error.
 		CONSTANTS
-			STOPPED:  YieldState (0)
-			RUNNING:  YieldState (1)
-			PAUSED:   YieldState (2)
-			FINISHED: YieldState (3)
-			ERROR:    YieldState (4)
+			STOPPED:  CordState (0)
+			RUNNING:  CordState (1)
+			PAUSED:   CordState (2)
+			FINISHED: CordState (3)
+			ERROR:    CordState (4)
 			NONE:  ErrorBehavior (0)
 				If used, there are no warnings or errors in the console if an error happens.
 			WARN:  ErrorBehavior (1)
@@ -50,7 +50,7 @@
 				If used, there is an error in the console if an error happens.
 --]]
 
-local function runYield(this)
+local function runCord(this)
 	this.coroutine = coroutine.running()
 	this.globalIndex[this.coroutine] = this
 	this.outArguments = {this.func(unpack(this.inArguments))}
@@ -64,10 +64,10 @@ local function callbackInner(func1, func2, ...)
 	return func1(func2(...))
 end
 
-local YieldWrap, YieldWrapMeta
-YieldWrapMeta = {
+local CordWrap, CordWrapMeta
+CordWrapMeta = {
 	__index = {
-		-- YieldState
+		-- CordState
 		STOPPED  = 0,
 		RUNNING  = 1,
 		PAUSED   = 2,
@@ -89,16 +89,16 @@ YieldWrapMeta = {
 			return yieldWrap
 		end,
 		running = function(this)
-			assertMetatable(this, YieldWrapMeta, "Expected ':' not '.' calling member function running")
+			assertMetatable(this, CordWrapMeta, "Expected ':' not '.' calling member function running")
 			local current = this.globalIndex[coroutine.running()]
 			if current then
-				-- easy! current Yield is whichever the current coroutine is!
+				-- easy! current Cord is whichever the current coroutine is!
 				return current
 			else
 				-- looks like it shifted to another coroutine, but hasn't waited at all yet
 				-- in that case, we need to find which coroutine is active, but not suspended or dead
-				-- we want to find the most recent one like this: it's possible for a Yield to
-				--  resume another Yield, so we need to get the most recent one resumed!
+				-- we want to find the most recent one like this: it's possible for a Cord to
+				--  resume another Cord, so we need to get the most recent one resumed!
 				local globalStack = this.globalStack
 				for i = #globalStack, 1, -1 do
 					local v = globalStack[i]
@@ -109,10 +109,10 @@ YieldWrapMeta = {
 			end
 		end,
 		new = function(this, ...)
-			assert(this == YieldWrap, "Expected ':' not '.' calling constructor Yield")
-			local newYield = setmetatable({}, YieldWrapMeta)
-			newYield:construct(...)
-			return newYield
+			assert(this == CordWrap, "Expected ':' not '.' calling constructor Cord")
+			local newCord = setmetatable({}, CordWrapMeta)
+			newCord:construct(...)
+			return newCord
 		end,
 		construct = function(this, func, errorBehavior)
 			assert(type(func) == "function" or type(func) == "table", "`f` should be a function or table")
@@ -129,7 +129,7 @@ YieldWrapMeta = {
 				conn:disconnect()
 				this.state = this.RUNNING
 				this:pushStack(this)
-				local success, err = pcall(runYield, this)
+				local success, err = pcall(runCord, this)
 				this:popStack()
 				this.globalIndex[this.coroutine] = nil
 				if success then
@@ -143,9 +143,9 @@ YieldWrapMeta = {
 			end)
 		end,
 		yield = function(this, ...)
-			assertMetatable(this, YieldWrapMeta, "Expected ':' not '.' calling member function yield")
-			if this == YieldWrap then
-				return assert(this:running(), "No Yield is running."):yield(...)
+			assertMetatable(this, CordWrapMeta, "Expected ':' not '.' calling member function yield")
+			if this == CordWrap then
+				return assert(this:running(), "No Cord is running."):yield(...)
 			end
 			if this.state >= this.FINISHED then
 				error("Cannot yield when already finished")
@@ -173,7 +173,7 @@ YieldWrapMeta = {
 			return unpack(inArgs)
 		end,
 		resume = function(this, ...)
-			assertMetatable(this, YieldWrapMeta, "Expected ':' not '.' calling member function resume")
+			assertMetatable(this, CordWrapMeta, "Expected ':' not '.' calling member function resume")
 			if this.state >= this.FINISHED then
 				error("Cannot resume when already finished")
 			elseif this.state == this.RUNNING then
@@ -193,15 +193,15 @@ YieldWrapMeta = {
 			end
 			if this.error and this.errorBehavior ~= this.NONE then
 				if this.errorBehavior == this.WARN then
-					warn("Error in Yield: "..tostring(this.error))
+					warn("Error in Cord: "..tostring(this.error))
 				elseif this.errorBehavior == this.ERROR then
-					error("Error in Yield: "..tostring(this.error))
+					error("Error in Cord: "..tostring(this.error))
 				end
 			end
 			return unpack(outArgs)
 		end,
 		getYieldCaller = function(this)
-			assertMetatable(this, YieldWrapMeta, "Expected ':' not '.' calling member function getYieldCaller")
+			assertMetatable(this, CordWrapMeta, "Expected ':' not '.' calling member function getYieldCaller")
 			if not this.yieldCaller then
 				this.yieldCaller = function(...)
 					return this:yield(...)
@@ -210,7 +210,7 @@ YieldWrapMeta = {
 			return this.yieldCaller
 		end,
 		getResumeCaller = function(this)
-			assertMetatable(this, YieldWrapMeta, "Expected ':' not '.' calling member function getResumeCaller")
+			assertMetatable(this, CordWrapMeta, "Expected ':' not '.' calling member function getResumeCaller")
 			if not this.resumeCaller then
 				this.resumeCaller = function(...)
 					return this:resume(...)
@@ -219,12 +219,12 @@ YieldWrapMeta = {
 			return this.resumeCaller
 		end,
 		finished = function(this)
-			assertMetatable(this, YieldWrapMeta, "Expected ':' not '.' calling member function finished")
+			assertMetatable(this, CordWrapMeta, "Expected ':' not '.' calling member function finished")
 			return this.state < this.FINISHED
 		end
 	},
 	__call = function(this, ...)
-		if this == YieldWrap then
+		if this == CordWrap then
 			return this:new(...)
 		else
 			return this:resume(...)
@@ -232,6 +232,6 @@ YieldWrapMeta = {
 	end
 }
 
-YieldWrap = setmetatable({}, YieldWrapMeta)
+CordWrap = setmetatable({}, CordWrapMeta)
 
-return YieldWrap
+return CordWrap
