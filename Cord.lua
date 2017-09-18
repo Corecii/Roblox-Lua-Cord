@@ -30,7 +30,7 @@
 				* if errorBehavior is ERROR, then resume will error with the error.
 				* if errorBehavior is WARN, then resume will warn with the error, then...
 				* if errorBehavior is WARN or NONE, it will return `nil` and the `error` property will be set.
-				* if errorBehavior is a function, then `errorBehavior(error: string, cord: Cord)` is called,
+				* if errorBehavior is a function, then `errorBehavior(cord: Cord)` is called,
 				   and the result is returned.
 				Errors if this Cord is running or already finished.
 			:getResumeCaller() --> resumeCaller: function
@@ -210,7 +210,7 @@ CordWrapMeta = {
 				elseif this.errorBehavior == this.ERROR then
 					error("Error in Cord: "..tostring(this.error))
 				elseif type(this.errorBehavior) == "function" then
-					outArgs = {this.errorBehavior(this.error, this)}
+					outArgs = {this.errorBehavior(this)}
 				end
 			end
 			return unpack(outArgs)
