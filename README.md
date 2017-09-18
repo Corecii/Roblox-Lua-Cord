@@ -2,7 +2,7 @@
 `Cord` is a module that emulates the abilities of coroutines but allows you to `wait` within Cords. It uses Events instead of using coroutines directly, so it works *within* the scheduler.
 
 [Github: Source and Documentation](https://github.com/Corecii/Roblox-Lua-Cord/blob/master/Cord.lua)  
-[Roblox Module](https://www.roblox.com/catalog/1053775069/redirect): 1053775069 (`require` compatible)
+[Roblox Module](https://www.roblox.com/catalog/1053775069/redirect): 1053775069 (`require` compatible)  
 [DevForum Thread](https://devforum.roblox.com/t/cord-module-coroutine-like-written-for-the-roblox-event-scheduler/52891)
 
 ---
