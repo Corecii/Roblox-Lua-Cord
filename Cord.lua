@@ -40,7 +40,7 @@
 			:getYieldCaller() --> yieldCaller: function
 				Returns a function that calls `:yield` on this yield and returns the result
 			:finished() --> isFinished: bool
-				Returns whether or not the Cord has finished. (`.state < Cord.FINISHED`)
+				Returns whether or not the Cord has finished. (`.state >= Cord.FINISHED`)
 		PROPERTIES
 			state: CordState
 				Current state of the Cord. Similar to the results of `coroutine.status`
