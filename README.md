@@ -15,3 +15,4 @@ Differences from coroutines in Roblox
   * You can change this behavior by providing an `ErrorBehavior` when you create a Cord. If you do this, you can use Cord.error to check if an error occured.
     * `Cord:new(function() end, Cord.WARN)` to warn on errors
     * `Cord:new(function() end, Cord.NONE)` to do nothing on errors
+    * `Cord:new(func, function(cord) --[[handle error]] end)` where the result of the error handler is returned to `:resume`
