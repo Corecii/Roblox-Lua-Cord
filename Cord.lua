@@ -236,7 +236,7 @@ CordWrapMeta = {
 		end,
 		finished = function(this)
 			assertMetatable(this, CordWrapMeta, "Expected ':' not '.' calling member function finished")
-			return this.state < this.FINISHED
+			return this.state >= this.FINISHED
 		end
 	},
 	__call = function(this, ...)
