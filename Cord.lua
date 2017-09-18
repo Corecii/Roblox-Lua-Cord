@@ -154,6 +154,9 @@ CordWrapMeta = {
 			elseif this.state == this.PAUSED then
 				error("Cannot yield while paused")
 			end
+			if coroutine.status(this.coroutine) == "suspended" then
+				error(":yield called from outside the Cord")
+			end
 			this.outArguments = {...}
 			local inArgs
 			local conn
