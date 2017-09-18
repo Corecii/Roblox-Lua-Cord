@@ -17,20 +17,22 @@
 				Using cord-specific yields is a pathway to errors and bugs that lock up your script!
 				Errors if there is no current Cord, or if the current context is not within the current Cord.
 			:yield(... [a]) --> ... [b]
-				Passes ... [a] to whatever `:resume`d this Cord, then waits to be `:resume`d.
-				Returns whatever ... [b] in `:resume(... [b])` will be, once resumed.
+				Passes ... [a] to the `:resume` that resumed this Cord, then waits to be resumed.
+				Waits for then returns ... [b] in `:resume(... [b])` 
 				Errors if this Cord is not running.
 			Cord(... [b]) --> ... [a]
 			:resume(... [b]) --> ... [a]
+				If the Cord has not been ran, this calls the Cord function with ... [b], and
+				 returns the result of the first `:yield(... [a])` as ... [a]
 				Passes ... [b] into this Cord as the result of the earlier `:yield` call,
-				 then waits for the `:yield`
-				Returns whatever the next `:yield(... [a])` will be, once yield is called.
-				 If the Cord returns and finished, this returns whatever yield returned
-				If this Cord errors...
-				* if errorBehavior is ERROR, then resume will error with the error.
-				* if errorBehavior is WARN, then resume will warn with the error, then...
-				* if errorBehavior is WARN or NONE, it will return `nil` and the `error` property will be set.
-				* if errorBehavior is a function, then `errorBehavior(cord: Cord)` is called,
+				 then waits for the `:yield(... [a])` and returns the result as ... [a]
+				Waits for then returns ... [a] from `:yield(... [a])`
+				 If the Cord function finishes or returns, this returns whatever the Cord function returned.
+				 If this Cord errors...
+				 * if errorBehavior is ERROR, then resume will error with the error.
+				 * if errorBehavior is WARN, then resume will warn with the error, then...
+				 * if errorBehavior is WARN or NONE, it will return `nil` and the `error` property will be set.
+				 * if errorBehavior is a function, then `errorBehavior(cord: Cord)` is called,
 				   and the result is returned.
 				Errors if this Cord is running or already finished.
 			:getResumeCaller() --> resumeCaller: function
