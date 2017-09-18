@@ -72,10 +72,6 @@ local function assertMetatable(tbl, meta, err)
 	return assert(type(tbl) == "table" and getmetatable(tbl) == meta, err)
 end
 
-local function callbackInner(func1, func2, ...)
-	return func1(func2(...))
-end
-
 local CordWrap, CordWrapMeta
 CordWrapMeta = {
 	__index = {
@@ -130,7 +126,10 @@ CordWrapMeta = {
 			assert(type(func) == "function" or type(func) == "table", "`f` should be a function or table")
 			this.func = func
 			this.errorBehavior = errorBehavior or this.ERROR
-			assert(type(this.errorBehavior) == "number" or type(this.errorBehavior) == "function", "errorBehavior should be an ErrorBehavior, a function, or nil.")
+			assert(type(this.errorBehavior) == "number"
+				or type(this.errorBehavior) == "function"
+				or type(this.errorBehavior) == "table",
+				"errorBehavior should be an ErrorBehavior, a function, a table, or nil.")
 			this.inEvent = Instance.new("BindableEvent")
 			this.outEvent = Instance.new("BindableEvent")
 			this.inArguments = {}
@@ -211,7 +210,7 @@ CordWrapMeta = {
 					warn("Error in Cord: "..tostring(this.error))
 				elseif this.errorBehavior == this.ERROR then
 					error("Error in Cord: "..tostring(this.error))
-				elseif type(this.errorBehavior) == "function" then
+				elseif type(this.errorBehavior) == "function" or type(this.errorBehavior) == "table" then
 					outArgs = {this.errorBehavior(this)}
 				end
 			end
