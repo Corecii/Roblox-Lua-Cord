@@ -81,7 +81,6 @@ YieldWrapMeta = {
 				local globalStack = this.globalStack
 				for i = #globalStack, 1, -1 do
 					local v = globalStack[i]
-					print(coroutine.status(v.coroutine))
 					if coroutine.status(v.coroutine) == "normal" then
 						return v
 					end
