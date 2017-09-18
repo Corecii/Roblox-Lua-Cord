@@ -40,6 +40,8 @@
 --]]
 
 local function runYield(this)
+	this.coroutine = coroutine.running()
+	this.globalIndex[this.coroutine] = this
 	this.outArguments = {this.func(unpack(this.inArguments))}
 end
 
@@ -79,6 +81,7 @@ YieldWrapMeta = {
 				local globalStack = this.globalStack
 				for i = #globalStack, 1, -1 do
 					local v = globalStack[i]
+					print(coroutine.status(v.coroutine))
 					if coroutine.status(v.coroutine) == "normal" then
 						return v
 					end
@@ -103,8 +106,6 @@ YieldWrapMeta = {
 			conn = this.inEvent.Event:connect(function()
 				conn:disconnect()
 				this.state = this.RUNNING
-				this.coroutine = coroutine.running()
-				this.globalIndex[this.coroutine] = this
 				this:pushStack(this)
 				local success, err = pcall(runYield, this)
 				this:popStack()
@@ -123,7 +124,7 @@ YieldWrapMeta = {
 		yield = function(this, ...)
 			assertMetatable(this, YieldWrapMeta, "Expected ':' not '.' calling member function yield")
 			if this == YieldWrap then
-				return this.globalStack[#this.globalStack]:yield(...)
+				return assert(this:running(), "No Yield is running."):yield(...)
 			end
 			if this.state >= this.FINISHED then
 				error("Cannot yield when already finished")
