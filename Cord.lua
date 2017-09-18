@@ -2,10 +2,10 @@
 	
 	Class Cord
 		METHODS
-			static Cord(f: function, errorBehavior: ErrorBehavior [ERROR]) --> yield: Cord
-			static :new(f: function, errorBehavior: ErrorBehavior [ERROR]) --> yield: Yield
+			static Cord(f: function, errorBehavior: ErrorBehavior [ERROR] | function) --> yield: Cord
+			static :new(f: function, errorBehavior: ErrorBehavior [ERROR] | function) --> yield: Yield
 				Creates a new Cord that will run `f` when resumed
-				errorBehavior is optional. If not provided, it defaults to ERROR.
+				errorBehavior is optional. If not provided, it defaults to ERROR. Check :resume for docs.
 			static :running(findExtended: bool [false]) --> currentCord: Cord
 				Returns the Cord that is currently running, or nil if none.
 				if findExtended is true, this also looks for a Cord that is technically
@@ -26,7 +26,12 @@
 				 then waits for the `:yield`
 				Returns whatever the next `:yield(... [a])` will be, once yield is called.
 				 If the Cord returns and finished, this returns whatever yield returned
-				If this Cord errors, it will return `nil` and the `error` propert will be set.
+				If this Cord errors...
+				* if errorBehavior is ERROR, then resume will error with the error.
+				* if errorBehavior is WARN, then resume will warn with the error, then...
+				* if errorBehavior is WARN or NONE, it will return `nil` and the `error` property will be set.
+				* if errorBehavior is a function, then `errorBehavior(error: string, cord: Cord)` is called,
+				   and the result is returned.
 				Errors if this Cord is running or already finished.
 			:getResumeCaller() --> resumeCaller: function
 				Returns a function that calls `:resume` on this yield and returns the result
@@ -123,7 +128,7 @@ CordWrapMeta = {
 			assert(type(func) == "function" or type(func) == "table", "`f` should be a function or table")
 			this.func = func
 			this.errorBehavior = errorBehavior or this.ERROR
-			assert(type(this.errorBehavior) == "number", "errorBehavior should be an ErrorBehavior or nil.")
+			assert(type(this.errorBehavior) == "number" or type(this.errorBehavior) == "function", "errorBehavior should be an ErrorBehavior, a function, or nil.")
 			this.inEvent = Instance.new("BindableEvent")
 			this.outEvent = Instance.new("BindableEvent")
 			this.inArguments = {}
@@ -204,6 +209,8 @@ CordWrapMeta = {
 					warn("Error in Cord: "..tostring(this.error))
 				elseif this.errorBehavior == this.ERROR then
 					error("Error in Cord: "..tostring(this.error))
+				elseif type(this.errorBehavior) == "function" then
+					outArgs = {this.errorBehavior(this.error, this)}
 				end
 			end
 			return unpack(outArgs)
