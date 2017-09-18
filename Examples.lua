@@ -1,4 +1,4 @@
-local Cord = require(script.Cord)
+local Cord = require(1053775069)
 
 ---
 
