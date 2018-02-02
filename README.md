@@ -12,7 +12,7 @@ Differences from coroutines in Roblox
 * If the Cord yields, so does the caller. The caller always waits until the Cord calls `:yield`, returns, or errors.
 * If you want to run a Cord in parallel, you can use the `:parallel` method instead of `:resume`.
   * This will make Cord work like a coroutine
-  * You'll have to check `cord.state` or `cord:resumable()` to make sure the cord can be resumed. IF you try to resume a running or finished Cord, it will error.
+  * You'll have to check `cord.state` or `cord:resumable()` to make sure the cord can be resumed. If you try to resume a running or finished Cord, it will error.
   * You can get the arguments passed to `:yield` or the return values using `cord:returned()` or `cord.outArguments`
 * If the Cord errors, so does whatever resumed it.
   * You can change this behavior by providing an `ErrorBehavior` when you create a Cord. If you do this, you can use Cord.error to check if an error occured.
